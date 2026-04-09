@@ -20,15 +20,11 @@ class WebhookService
         $this->paymentRepo = $paymentRepo;
     }
 
-    /**
-     * Process an incoming webhook idempotently.
-     */
+
     public function processWebhook(array $data)
     {
         try {
-            // We ALWAYS attempt to store the EventLog first.
-            // If the event_id already exists, the database unique constraint 
-            // will throw an exception, protecting us from processing duplicates.
+            // If event already sent - envent_id exists - it will execute the catch statement
             $this->eventLogRepo->store($data);
         } catch (QueryException $e) {
             // Code 23000 / 23505 usually indicates a unique constraint violation
@@ -37,7 +33,8 @@ class WebhookService
                     'event_id' => $data['event_id'],
                     'payment_id' => $data['payment_id']
                 ]);
-                return; // Exit early, do not upsert payment
+                // Exit, not processing the same event twice
+                return;
             }
             throw $e;
         }
@@ -47,8 +44,7 @@ class WebhookService
             'payment_id' => $data['payment_id']
         ]);
 
-        // If we reach here, it means the event_id is new.
-        // We now idempotently upsert the Current Payment state.
+        // Event_id is new, then upsert the current payment state.
         $this->paymentRepo->upsert([
             'payment_id' => $data['payment_id'],
             'event' => $data['event'],
