@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Repositories\Contracts\EventLogRepositoryInterface;
+use App\Repositories\Contracts\PaymentRepositoryInterface;
+use App\Repositories\Eloquent\EloquentEventLogRepository;
+use App\Repositories\Eloquent\EloquentPaymentRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -11,7 +15,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(EventLogRepositoryInterface::class, EloquentEventLogRepository::class);
+        $this->app->bind(PaymentRepositoryInterface::class, EloquentPaymentRepository::class);
     }
 
     /**
