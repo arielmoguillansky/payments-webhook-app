@@ -1,58 +1,92 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Webhook Processing System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A robust, enterprise-grade webhook processing backend built on Laravel 11. 
 
-## About Laravel
+This application was structured strictly around a layered architecture to ensure scalability, ease of testing, and perfectly decoupled business logic.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Architecture
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+The system enforces the following rigid flow for all requests:
+`HTTP Controller → Service Layer → Repository Interface → Eloquent Model`
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **No shortcuts:** The controllers and service layer are forbidden from using Eloquent commands directly (e.g., `Payment::create()`). All external database requests go through interfaces.
+- **FormRequests:** Validation is extracted out of the Controller entirely. Requests are sanitized via `StorePaymentWebhookRequest`—if validation fails, a `422 Unprocessable Entity` JSON response is thrown without the controller ever knowing the request existed.
 
-## Learning Laravel
+## Implementation Phases
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 1. The Data Layer (Migrations & Models)
+Created the `event_logs` and `payments` tables. 
+- The `payments` table uses a string for the primary key (`payment_id`) as it receives IDs directly from webhook providers.
+- The `event_logs` table serves as an immutable timeline of every transaction ever processed, making it the ultimate source of truth.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 2. The Contract Layer (Repository Interfaces)
+We defined `PaymentRepositoryInterface` and `EventLogRepositoryInterface`, then created their Eloquent implementations.
+- These are bound securely inside `AppServiceProvider`.
+- This ensures our app logic relies on *contracts* rather than hardcoded database engines. If we migrate an aggregate log table to MongoDB later, the rest of the application remains completely untouched.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### 3. The Service Layer (Idempotency)
+`WebhookService` handles the core flow logic:
+1. Try to save the event to the `event_logs` table immediately.
+2. The `event_id` column is set to `unique()`. Thus, if a duplicate webhook hits our system, the database strictly blocks the transaction and throws a `QueryException`.
+3. The Service catches this exact duplicate-entry exception, and safely terminates the system process securely before it updates the primary `Payment` states. 
+4. If it is *not* a duplicate, the event gets logged safely and the actual `Payment` record is upserted.
 
-## Agentic Development
+### 4. HTTP Layer (Controllers & Routing)
+- Endpoint: `POST /webhooks/payment` handles the incoming payloads. Uses `StorePaymentWebhookRequest` to enforce strict formatting requirements (e.g. `currency` must be 3 characters, `amount` strictly numeric and positive).
+- CSRF token validation was disabled specifically for `webhooks/*` within `bootstrap/app.php` so standard machine API callers are not halted.
+- Controllers are incredibly lean, returning basic JSON payloads and HTTP 200s for success. Duplicate webhooks correctly return a `200 Success` despite being silently blocked by the idempotency layer, so that the external partner network assumes successful delivery and ceases retries.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+---
+
+## How to Test
+
+You can test the system manually via `curl`. 
+
+### 1. Test a Valid Webhook
+Notice that running this exact command multiple times will continually return `200 Success` (correct webhook behavior), but it will only actually process in your database **once** due to the `event_id` idempotency lock.
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+curl -v -X POST http://localhost:8000/webhooks/payment \
+-H "Content-Type: application/json" \
+-H "Accept: application/json" \
+-d '{
+  "event_id": "evt_abc123",
+  "payment_id": "pay_xyz987",
+  "event": "payment.success",
+  "amount": 49.99,
+  "currency": "USD",
+  "user_id": "user_1001",
+  "timestamp": "2026-04-10 12:00:00"
+}'
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 2. Test the Validation (FormRequest) Shield
+Try sending a `currency` that is 4 characters long, or a negative `amount`, or omitting the `event_id`:
 
-## Contributing
+```bash
+curl -v -X POST http://localhost:8000/webhooks/payment \
+-H "Content-Type: application/json" \
+-H "Accept: application/json" \
+-d '{
+  "payment_id": "pay_xyz987",
+  "event": "payment.success",
+  "amount": -50.00,
+  "currency": "USDS",
+  "user_id": "user_1001",
+  "timestamp": "2026-04-10 12:00:00"
+}'
+```
+You will immediately receive a strict `422 Unprocessable Entity` JSON response structured with precise error targets.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 3. Verify the GET Endpoints
+After successfully triggering a webhook, query the API endpoints to verify the database states:
 
-## Code of Conduct
+**Get all latest payment states:**
+```bash
+curl -X GET http://localhost:8000/payments -H "Accept: application/json"
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Get the timeline history for a specific payment:**
+```bash
+curl -X GET http://localhost:8000/payments/pay_xyz987/events -H "Accept: application/json"
+```
