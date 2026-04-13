@@ -19,12 +19,14 @@ class PaymentController extends Controller
         $this->eventLogRepo = $eventLogRepo;
     }
 
-    public function index(): JsonResponse
+    public function index(\Illuminate\Http\Request $request): JsonResponse
     {
-        $payments = $this->paymentRepo->list();
-        return response()->json([
-            'data' => $payments
-        ]);
+        $filters = $request->only(['event', 'currency', 'user_id', 'date_from', 'date_to']);
+        $perPage = $request->input('per_page', 15);
+
+        $payments = $this->paymentRepo->list($filters, (int) $perPage);
+
+        return response()->json($payments);
     }
 
     public function events(string $id): JsonResponse

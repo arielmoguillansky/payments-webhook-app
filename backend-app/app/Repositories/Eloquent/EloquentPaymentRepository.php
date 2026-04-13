@@ -20,8 +20,30 @@ class EloquentPaymentRepository implements PaymentRepositoryInterface
         return Payment::find($paymentId);
     }
 
-    public function list()
+    public function list(array $filters = [], int $perPage = 15)
     {
-        return Payment::orderBy('updated_at', 'desc')->get();
+        $query = Payment::query();
+
+        if (!empty($filters['event'])) {
+            $query->where('event', $filters['event']);
+        }
+        
+        if (!empty($filters['currency'])) {
+            $query->where('currency', $filters['currency']);
+        }
+
+        if (!empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $query->where('updated_at', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->where('updated_at', '<=', $filters['date_to']);
+        }
+
+        return $query->orderBy('updated_at', 'desc')->paginate($perPage);
     }
 }

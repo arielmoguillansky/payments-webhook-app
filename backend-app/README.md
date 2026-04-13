@@ -78,15 +78,32 @@ curl -v -X POST http://localhost:8000/webhooks/payment \
 ```
 You will immediately receive a strict `422 Unprocessable Entity` JSON response structured with precise error targets.
 
-### 3. Verify the GET Endpoints
-After successfully triggering a webhook, query the API endpoints to verify the database states:
+### 3. Testing Protected Endpoints (Sanctum Auth)
+Because the `GET /payments` and `POST /payments/{id}/refund` endpoints are now locked behind Sanctum authentication, you must log in first to generate a Bearer Token.
 
-**Get all latest payment states:**
+**Step A: Get your API Token**
+Run this to log in as the auto-generated admin and copy the `token` string returned in the JSON:
 ```bash
-curl -X GET http://localhost:8000/payments -H "Accept: application/json"
+curl -X POST http://localhost:8000/api/login \
+-H "Content-Type: application/json" \
+-H "Accept: application/json" \
+-d '{
+  "email": "admin@admin.com",
+  "password": "secret"
+}'
 ```
 
-**Get the timeline history for a specific payment:**
+**Step B: Use the Token to Fetch Payments**
+Replace `<YOUR_TOKEN>` with the string you just copied:
 ```bash
-curl -X GET http://localhost:8000/payments/pay_xyz987/events -H "Accept: application/json"
+curl -X GET http://localhost:8000/api/payments \
+-H "Accept: application/json" \
+-H "Authorization: Bearer <YOUR_TOKEN>"
+```
+
+**Step C: Trigger a Manual Refund**
+```bash
+curl -X POST http://localhost:8000/api/payments/pay_xyz987/refund \
+-H "Accept: application/json" \
+-H "Authorization: Bearer <YOUR_TOKEN>"
 ```
