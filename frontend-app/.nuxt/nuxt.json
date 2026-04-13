@@ -1,0 +1,9 @@
+{
+  "_hash": "l33O6VY50LKkBKVo0-WanDa-KWk36J9jHnDptTqWTaM",
+  "project": {
+    "rootDir": "/home/kemba/buildonline/laravel-training/frontend-app"
+  },
+  "versions": {
+    "nuxt": "3.21.2"
+  }
+}
