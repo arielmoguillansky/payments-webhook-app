@@ -32,7 +32,7 @@
           <label>User ID</label>
           <input v-model.lazy="filters.user_id" type="text" placeholder="e.g. user_1" @change="fetchPayments(1)" />
         </div>
-        <button class="refresh-btn" @click="fetchPayments()">Manual Refresh</button>
+        <button class="refresh-btn" @click="refreshData()">Manual Refresh</button>
       </section>
 
       <!-- Table array -->
@@ -114,96 +114,35 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
+import { usePaymentsStore } from '@/stores/payments'
 
 definePageMeta({
   middleware: 'auth'
 })
 
-const token = useCookie('auth_token')
-const fetchWithAuth = useApi()
+const authStore = useAuthStore()
+const paymentsStore = usePaymentsStore()
 
-// Table State
-const payments = ref([])
-const meta = ref(null)
-const loading = ref(false)
+// Map state to refs so the existing template bindings work perfectly
+const { 
+  payments, 
+  meta, 
+  loading, 
+  filters, 
+  selectedPaymentId: selectedPayment, 
+  paymentEvents, 
+  eventsLoading, 
+  refundLoading 
+} = storeToRefs(paymentsStore)
 
-// Filter State
-const filters = ref({
-  event: '',
-  currency: '',
-  user_id: ''
-})
-
-const selectedPayment = ref(null)
-const paymentEvents = ref([])
-const eventsLoading = ref(false)
-const refundLoading = ref(false)
-
-let refreshInterval = null
-
-const fetchPayments = async (page = null) => {
-  if (!page && meta.value) page = meta.value.current_page
-  if (!page) page = 1
-  
-  loading.value = true
-  
-  try {
-    const query = { page, per_page: 8 }
-    if (filters.value.event) query.event = filters.value.event
-    if (filters.value.currency) query.currency = filters.value.currency
-    if (filters.value.user_id) query.user_id = filters.value.user_id
-    
-    const res = await fetchWithAuth('/payments', { query })
-    
-    // Laravel LengthAwarePaginator object
-    if (res.current_page) {
-       payments.value = res.data
-       meta.value = {
-         current_page: res.current_page,
-         last_page: res.last_page,
-         total: res.total
-       }
-    } else {
-       payments.value = res.data || res
-    }
-  } catch (err) {
-    if (err.response?.status === 401) {
-       token.value = null
-       navigateTo('/login')
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
-const viewDetails = async (paymentId) => {
-  selectedPayment.value = paymentId
-  eventsLoading.value = true
-  try {
-    const res = await fetchWithAuth(`/payments/${paymentId}/events`)
-    paymentEvents.value = res.data || res
-  } catch (e) {
-    console.error(e)
-  } finally {
-    eventsLoading.value = false
-  }
-}
-
-const triggerRefund = async (paymentId) => {
-  refundLoading.value = true
-  try {
-    const res = await fetchWithAuth(`/payments/${paymentId}/refund`, {
-      method: 'POST'
-    })
-    await viewDetails(paymentId)
-    await fetchPayments()
-  } catch (e) {
-    alert(e.response?.data?.message || 'Failed to trigger refund')
-  } finally {
-    refundLoading.value = false
-  }
-}
+// Map actions
+const fetchPayments = (page = null) => paymentsStore.fetchPayments(page)
+const refreshData = () => paymentsStore.fetchPayments(meta.value?.current_page || 1, true)
+const viewDetails = (paymentId) => paymentsStore.fetchPaymentEvents(paymentId)
+const triggerRefund = (paymentId) => paymentsStore.triggerRefund(paymentId)
 
 const getBadgeClass = (evt) => {
   if (evt === 'payment.success') return 'badge-success'
@@ -211,36 +150,16 @@ const getBadgeClass = (evt) => {
   return 'badge-warning'
 }
 
-const logout = () => {
-  token.value = null
-  navigateTo('/login')
-}
+const logout = () => authStore.logout()
 
-// Quiet background refresh!
-const autoRefresh = async () => {
-  if (loading.value) return // Don't interrupt manual loading
-  const page = meta.value ? meta.value.current_page : 1
-  const query = { page, per_page: 8 }
-  if (filters.value.event) query.event = filters.value.event
-  if (filters.value.currency) query.currency = filters.value.currency
-  if (filters.value.user_id) query.user_id = filters.value.user_id
-  
-  try {
-     const res = await fetchWithAuth('/payments', { query })
-     if (res.current_page) {
-       payments.value = res.data
-       meta.value.total = res.total
-     }
-  } catch(e) {}
-}
-
+// Initialize
 onMounted(() => {
-  fetchPayments(1)
-  refreshInterval = setInterval(autoRefresh, 5000) // Poll API every 5s
+  paymentsStore.fetchPayments(1)
+  paymentsStore.startPolling()
 })
 
 onUnmounted(() => {
-  if (refreshInterval) clearInterval(refreshInterval)
+  paymentsStore.stopPolling()
 })
 </script>
 

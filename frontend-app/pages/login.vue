@@ -15,10 +15,10 @@
           <input v-model="password" type="password" placeholder="secret" required />
         </div>
         
-        <p v-if="error" class="error">{{ error }}</p>
+        <p v-if="authStore.error" class="error">{{ authStore.error }}</p>
         
-        <button type="submit" :disabled="loading">
-          {{ loading ? 'Logging in...' : 'Sign In' }}
+        <button type="submit" :disabled="authStore.loading">
+          {{ authStore.loading ? 'Logging in...' : 'Sign In' }}
         </button>
       </form>
     </div>
@@ -28,33 +28,14 @@
 <script setup>
 import { ref } from 'vue'
 
+const authStore = useAuthStore()
 const email = ref('admin@admin.com')
 const password = ref('secret')
-const loading = ref(false)
-const error = ref('')
-const config = useRuntimeConfig()
 
 const handleLogin = async () => {
-  loading.value = true
-  error.value = ''
-  
-  try {
-    const res = await $fetch(`${config.public.apiBase}/login`, {
-      method: 'POST',
-      body: { email: email.value, password: password.value },
-      headers: { 'Accept': 'application/json' }
-    })
-    
-    // Store token in Nuxt cookie
-    const tokenCookie = useCookie('auth_token', { maxAge: 60 * 60 * 24 * 7 })
-    tokenCookie.value = res.token
-    
-    // Navigate to dashboard
+  const success = await authStore.login(email.value, password.value)
+  if (success) {
     navigateTo('/')
-  } catch (err) {
-    error.value = 'Invalid login credentials. Please try again.'
-  } finally {
-    loading.value = false
   }
 }
 </script>
