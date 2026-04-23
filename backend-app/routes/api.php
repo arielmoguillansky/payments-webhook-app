@@ -4,6 +4,11 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\WebhookController;
+
+Route::post('/webhook', [WebhookController::class, 'handle']);
+Route::post('/checkout', [CheckoutController::class, 'initiatePayment']);
 
 Route::post('/login', [AuthController::class, 'login']);
 

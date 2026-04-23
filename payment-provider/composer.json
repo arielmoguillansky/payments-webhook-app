@@ -1,0 +1,14 @@
+{
+    "name": "buildonline/payment-provider",
+    "description": "A standalone plain PHP payment provider using Hexagonal Architecture & DDD",
+    "type": "project",
+    "require": {
+        "php": "^8.1",
+        "guzzlehttp/guzzle": "^7.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "Provider\\": "src/"
+        }
+    }
+}
