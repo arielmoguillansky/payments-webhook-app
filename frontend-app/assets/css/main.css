@@ -1,0 +1,255 @@
+/* ------------------------------------------------------------------
+   Design tokens — dark, hairline, high-contrast UI
+   ------------------------------------------------------------------ */
+:root {
+  color-scheme: dark;
+
+  --bg: #000;
+  --surface: #0a0a0b;
+  --surface-2: #111113;
+  --surface-3: #18181b;
+  --surface-hover: rgba(255, 255, 255, 0.035);
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --border-dashed: rgba(255, 255, 255, 0.07);
+
+  --text: #edf2f5;
+  --text-muted: rgba(237, 242, 245, 0.6);
+  --text-subtle: rgba(237, 242, 245, 0.38);
+
+  --accent: #ff8a4c;
+  --accent-soft: rgba(255, 138, 76, 0.12);
+
+  --success: #4ade80;
+  --success-soft: rgba(74, 222, 128, 0.1);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.1);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.1);
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --font-sans: 'Inter', 'SF Pro Display', -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-std: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 240ms;
+  --dur-slow: 700ms;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------
+   Primitives
+   ------------------------------------------------------------------ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-fast) var(--ease-std),
+    border-color var(--dur-fast) var(--ease-std),
+    opacity var(--dur-fast) var(--ease-std),
+    transform var(--dur-fast) var(--ease-std);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: #fff;
+  color: #111;
+}
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.88;
+}
+.btn-secondary {
+  background: var(--surface-3);
+  border-color: var(--border);
+  color: var(--text);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: #222226;
+  border-color: var(--border-strong);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.btn-danger {
+  background: var(--danger-soft);
+  border-color: rgba(248, 113, 113, 0.25);
+  color: var(--danger);
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.16);
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.field {
+  height: 32px;
+  padding: 0 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  transition:
+    border-color var(--dur-fast) var(--ease-std),
+    box-shadow var(--dur) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-std);
+}
+.field::placeholder {
+  color: var(--text-subtle);
+}
+.field:hover {
+  border-color: var(--border-strong);
+}
+.field:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+  background: var(--surface-3);
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface-3);
+  color: var(--text-subtle);
+  font-size: 11px;
+  font-family: var(--font-sans);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: -0.01em;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 0.7s linear infinite;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: shimmer 1.4s var(--ease-in-out) infinite;
+}
+
+/* ------------------------------------------------------------------
+   Motion
+   ------------------------------------------------------------------ */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes shimmer {
+  to { transform: translateX(100%); }
+}
+@keyframes blur-in {
+  from { opacity: 0; filter: blur(10px); transform: translateY(6px); }
+  to   { opacity: 1; filter: blur(0); transform: none; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+.reveal {
+  opacity: 0;
+  animation: fade-up var(--dur-slow) var(--ease-out) forwards;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

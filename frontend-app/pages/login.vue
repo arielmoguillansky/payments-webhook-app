@@ -1,27 +1,50 @@
 <template>
-  <div class="login-container">
-    <div class="login-card">
-      <h1>Admin Login</h1>
-      <p>Log in to view webhook payments</p>
-      
-      <form @submit.prevent="handleLogin">
-        <div class="input-group">
-          <label>Email</label>
-          <input v-model="email" type="email" placeholder="admin@admin.com" required />
-        </div>
-        
-        <div class="input-group">
-          <label>Password</label>
-          <input v-model="password" type="password" placeholder="secret" required />
-        </div>
-        
-        <p v-if="authStore.error" class="error">{{ authStore.error }}</p>
-        
-        <button type="submit" :disabled="authStore.loading">
-          {{ authStore.loading ? 'Logging in...' : 'Sign In' }}
+  <div class="login">
+    <Backdrop :star-count="60" />
+
+    <header class="topbar">
+      <div class="brand">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 12a8 8 0 0 1 14.9-4M20 12a8 8 0 0 1-14.9 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+          <circle cx="12" cy="12" r="2.6" fill="currentColor" />
+        </svg>
+        Relay
+      </div>
+      <span class="tag"><span class="tag-dot" /> Webhook console</span>
+    </header>
+
+    <main class="hero">
+      <BlurText tag="h1" text="Every payment event, in one place" class="title" />
+      <p class="subtitle reveal" style="--i: 6">
+        Monitor webhook deliveries, audit each payment's history and trigger refunds — in real time.
+      </p>
+
+      <form class="card reveal" style="--i: 9" @submit.prevent="handleLogin">
+        <label class="input-group">
+          <span>Email</span>
+          <input v-model="email" class="field" type="email" placeholder="admin@admin.com" autocomplete="email" required />
+        </label>
+
+        <label class="input-group">
+          <span>Password</span>
+          <input v-model="password" class="field" type="password" placeholder="••••••••" autocomplete="current-password" required />
+        </label>
+
+        <Transition name="error">
+          <p v-if="authStore.error" class="error">{{ authStore.error }}</p>
+        </Transition>
+
+        <button type="submit" class="btn btn-primary submit" :disabled="authStore.loading">
+          <span v-if="authStore.loading" class="spinner" />
+          <template v-else>
+            Sign in
+            <svg class="arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </template>
         </button>
       </form>
-    </div>
+    </main>
   </div>
 </template>
 
@@ -41,76 +64,128 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-.login-container {
+.login {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.topbar {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--border);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.tag-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.hero {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  padding: 48px 16px 96px;
+  text-align: center;
 }
-.login-card {
-  background: white;
-  padding: 2.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  width: 100%;
-  max-width: 400px;
-}
-h1 {
+.title {
   margin: 0;
-  font-size: 1.5rem;
-  color: #1e293b;
+  max-width: 640px;
+  font-size: clamp(34px, 5.4vw, 52px);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
 }
-p {
-  color: #64748b;
-  font-size: 0.875rem;
-  margin-bottom: 2rem;
+.subtitle {
+  margin: 18px 0 40px;
+  max-width: 460px;
+  color: var(--text-muted);
+  font-size: 16px;
+  letter-spacing: -0.005em;
+}
+
+.card {
+  width: 100%;
+  max-width: 380px;
+  padding: 24px;
+  text-align: left;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
 }
 .input-group {
-  margin-bottom: 1.5rem;
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
 }
-label {
-  display: block;
-  font-size: 0.875rem;
+.input-group > span {
+  font-size: 12.5px;
   font-weight: 500;
-  color: #334155;
-  margin-bottom: 0.5rem;
+  color: var(--text-muted);
 }
-input {
+.input-group .field {
+  height: 38px;
+  font-size: 14px;
+}
+.submit {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 1rem;
-  box-sizing: border-box;
+  height: 38px;
+  margin-top: 8px;
+  font-size: 14px;
 }
-input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+.arrow {
+  transition: transform var(--dur) var(--ease-out);
 }
-button {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-button:hover {
-  background-color: #2563eb;
-}
-button:disabled {
-  background-color: #93c5fd;
-  cursor: not-allowed;
+.submit:hover .arrow {
+  transform: translateX(3px);
 }
 .error {
-  color: #ef4444;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 13px;
+}
+.error-enter-active,
+.error-leave-active {
+  transition: all var(--dur) var(--ease-out);
+}
+.error-enter-from,
+.error-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>
